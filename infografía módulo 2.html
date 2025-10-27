@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infografía: Las 40 Recomendaciones del GAFI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F4F7F6;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 500px;
+        }
+        .chart-container-sm {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-[#F4F7F6] text-gray-800 p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+
+        <header class="p-8 bg-[#004369] text-white rounded-xl shadow-lg mb-10 text-center">
+            <h1 class="text-3xl md:text-5xl font-bold mb-2">Las 40 Recomendaciones del GAFI</h1>
+            <p class="text-lg md:text-xl text-gray-200">El estándar internacional para la lucha contra el Lavado de Activos y el Financiamiento del Terrorismo.</p>
+        </header>
+
+        <section class="card p-6 md:p-8 mb-10">
+            <h2 class="text-2xl md:text-3xl font-bold text-[#004369] mb-4 text-center">¿Qué Son los Estándares del GAFI?</h2>
+            <p class="text-center text-lg max-w-4xl mx-auto mb-6">
+                Son un esquema de medidas globales, coordinado y consistente, que los países deben implementar para combatir el <strong class="text-[#01949A]">Lavado de Activos (ALA)</strong>, el <strong class="text-[#01949A]">Financiamiento del Terrorismo (CFT)</strong> y el <strong class="text-[#01949A]">Financiamiento de la Proliferación de Armas de Destrucción Masiva (CFP)</strong>.
+            </p>
+            <p class="text-center text-lg max-w-4xl mx-auto">
+                No son solo las 40 Recomendaciones; los estándares completos también incluyen sus **Notas Interpretativas** (que aclaran su aplicabilidad) y un **Glosario** de definiciones.
+            </p>
+        </section>
+
+        <section class="card p-6 md:p-8 mb-10">
+            <h2 class="text-2xl md:text-3xl font-bold text-[#004369] mb-6 text-center">La Evolución de los Estándares</h2>
+            <p class="text-center text-lg max-w-4xl mx-auto mb-8">
+                Las Recomendaciones no son estáticas. Han evolucionado para responder a nuevas amenazas globales, pasando de un enfoque en el narcotráfico a un marco integral que incluye el terrorismo, la corrupción y la proliferación.
+            </p>
+            <div class="relative w-full overflow-x-auto pb-4">
+                <div class="flex space-x-8 md:space-x-0 md:grid md:grid-cols-6 min-w-[700px] md:min-w-full">
+                    
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-[#01949A] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-md">1990</div>
+                        <div class="h-16 border-l-4 border-[#01949A] my-2"></div>
+                        <p class="font-semibold text-[#004369]">Creación</p>
+                        <p class="text-sm">Se emiten las 40 Recomendaciones originales, enfocadas en el LA del narcotráfico.</p>
+                    </div>
+                    
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-[#01949A] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-md">1996</div>
+                        <div class="h-16 border-l-4 border-[#01949A] my-2"></div>
+                        <p class="font-semibold text-[#004369]">1ª Revisión</p>
+                        <p class="text-sm">Se amplía el campo a nuevas tendencias de lavado de dinero.</p>
+                    </div>
+                    
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-[#F0A202] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-md">2001</div>
+                        <div class="h-16 border-l-4 border-[#F0A202] my-2"></div>
+                        <p class="font-semibold text-[#004369]">Respuesta al 9/11</p>
+                        <p class="text-sm">Creación de 8 Recomendaciones Especiales contra el Financiamiento del Terrorismo (CFT).</p>
+                    </div>
+                    
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-[#01949A] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-md">2003</div>
+                        <div class="h-16 border-l-4 border-[#01949A] my-2"></div>
+                        <p class="font-semibold text-[#004369]">2ª Revisión</p>
+                        <p class="text-sm">Se avala el estándar ALA/CFT por más de 180 países.</p>
+                    </div>
+                    
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-[#F0A202] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-md">2004</div>
+                        <div class="h-16 border-l-4 border-[#F0A202] my-2"></div>
+                        <p class="font-semibold text-[#004369]">Expansión CFT</p>
+                        <p class="text-sm">Se agrega la 9ª Rec. Especial (transporte transfronterizo de dinero).</p>
+                    </div>
+                    
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-[#DB1F48] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-md">2012</div>
+                        <div class="h-16 border-l-4 border-[#DB1F48] my-2"></div>
+                        <p class="font-semibold text-[#004369]">Revisión Mayor</p>
+                        <p class="text-sm">Se integran las 9 Rec. Especiales. Se añade el Enfoque Basado en Riesgo, el CFP, corrupción y delitos tributarios.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card p-6 md:p-8 mb-10">
+            <h2 class="text-2xl md:text-3xl font-bold text-[#004369] mb-6 text-center">Los 7 Pilares de las 40 Recomendaciones</h2>
+            <p class="text-center text-lg max-w-4xl mx-auto mb-8">
+                Las 40 Recomendaciones están agrupadas en 7 áreas temáticas. El gráfico muestra el número de recomendaciones dedicadas a cada pilar, destacando la importancia de las "Medidas Preventivas" como el bloque más extenso.
+            </p>
+            <div class="chart-container">
+                <canvas id="pillarsChart"></canvas>
+            </div>
+        </section>
+
+        <section class="mb-10">
+            <h2 class="text-2xl md:text-3xl font-bold text-[#004369] mb-6 text-center">Pilar 1: El Enfoque Basado en Riesgo (EBR)</h2>
+            <p class="text-center text-lg max-w-4xl mx-auto mb-8">
+                La Recomendación 1 establece el pilar fundamental del sistema: el Enfoque Basado en Riesgo (EBR). Este principio exige a los países y a las entidades aplicar medidas proporcionales al nivel de riesgo identificado.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card p-6 border-t-8 border-[#DB1F48]">
+                    <h3 class="text-xl font-bold text-[#DB1F48] mb-3">Riesgo Alto</h3>
+                    <p class="mb-4">Amenazas significativas identificadas.</p>
+                    <div class="text-4xl text-center my-4 font-bold text-gray-400">➔</div>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <p class="font-semibold text-[#004369]">Acción Requerida:</p>
+                        <ul class="list-disc list-inside text-sm space-y-1 mt-2">
+                            <li>Asignación de **Mayores Recursos**.</li>
+                            <li>Aplicación de **Medidas Intensificadas** (DDC mejorada, monitoreo más frecuente).</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card p-6 border-t-8 border-[#01949A]">
+                    <h3 class="text-xl font-bold text-[#01949A] mb-3">Riesgo Bajo</h3>
+                    <p class="mb-4">Amenazas menos significativas identificadas.</p>
+                    <div class="text-4xl text-center my-4 font-bold text-gray-400">➔</div>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <p class="font-semibold text-[#004369]">Acción Requerida:</p>
+                        <ul class="list-disc list-inside text-sm space-y-1 mt-2">
+                            <li>Asignación de **Menores Recursos**.</li>
+                            <li>Aplicación de **Medidas Simplificadas** (DDC simplificada).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-10">
+            <h2 class="text-2xl md:text-3xl font-bold text-[#004369] mb-6 text-center">Pilar 4: Medidas Preventivas Clave (R. 9-23)</h2>
+            <p class="text-center text-lg max-w-4xl mx-auto mb-8">
+                Este es el pilar más extenso y detalla las obligaciones del sector financiero y las Actividades y Profesiones No Financieras Designadas (APNFD) para prevenir el LA/FT/FP.
+            </p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <div class="card p-6 lg:col-span-2">
+                    <h3 class="text-xl font-bold text-[#004369] mb-4">Debida Diligencia del Cliente (DDC) - (Rec. 10)</h3>
+                    <p class="text-sm mb-6">Es la obligación de conocer al cliente. Su intensidad varía según el EBR, aplicando tres niveles de medidas:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div class="bg-gray-50 p-4 rounded-lg border border-[#01949A]">
+                            <h4 class="font-bold text-[#01949A]">1. Simplificada</h4>
+                            <p class="text-xs">Para clientes de bajo riesgo verificado.</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-[#F0A202]">
+                            <h4 class="font-bold text-[#F0A202]">2. Ordinaria</h4>
+                            <p class="text-xs">Medidas estándar de identificación y verificación.</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-[#DB1F48]">
+                            <h4 class="font-bold text-[#DB1F48]">3. Intensificada</h4>
+                            <p class="text-xs">Para clientes de alto riesgo (ej. PEPs, países en listas).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-[#004369] mb-4">Personas Expuestas Políticamente (PEP) - (Rec. 12)</h3>
+                        <p class="text-sm mb-4">Se aplica una DDC intensificada a las PEPs (y sus familiares/asociados) por su vulnerabilidad a la corrupción. El GAFI identifica tres tipos:</p>
+                    </div>
+                    <div class="chart-container-sm">
+                        <canvas id="pepChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold text-[#004369] mb-4">Otras Medidas Clave</h3>
+                    <ul class="space-y-4">
+                        <li class="p-4 bg-gray-50 rounded-lg">
+                            <strong class="text-[#01949A]">R. 11: Mantenimiento de Registros:</strong> Conservar registros de DDC y transacciones por al menos **5 años**.
+                        </li>
+                        <li class="p-4 bg-gray-50 rounded-lg">
+                            <strong class="text-[#01949A]">R. 20: Reporte de Operaciones Sospechosas (ROS):</strong> Obligación de reportar sospechas de LA/FT a la **Unidad de Inteligencia Financiera (UIF)**.
+                        </li>
+                        <li class="p-4 bg-gray-50 rounded-lg">
+                            <strong class="text-[#01949A]">R. 22: APNFD:</strong> Extiende la DDC y el reporte a sectores vulnerables como:
+                            <ul class="list-disc list-inside text-sm mt-2 ml-4">
+                                <li>Casinos</li>
+                                <li>Agentes inmobiliarios</li>
+                                <li>Comerciantes de metales y piedras preciosas</li>
+                                <li>Abogados, notarios y contadores (en ciertas funciones)</li>
+                                <li>Proveedores de servicios societarios</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+        
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            <div class="card p-6">
+                <h2 class="text-2xl font-bold text-[#004369] mb-4">Pilar 5: Transparencia (R. 24-25)</h2>
+                <p class="text-lg">
+                    Este pilar es crucial para impedir el anonimato. Exige a los países tomar medidas para asegurar que exista información adecuada, precisa y oportuna sobre el **Beneficiario Final** (el dueño real) de las personas jurídicas (empresas) y otras estructuras (fideicomisos), y que las autoridades competentes puedan acceder a ella.
+                </p>
+            </div>
+            <div class="card p-6">
+                <h2 class="text-2xl font-bold text-[#004369] mb-4">Pilar 6: Autoridades (R. 26-35)</h2>
+                <p class="text-lg">
+                    Define los poderes y responsabilidades de las autoridades. La **Recomendación 29** exige que cada país establezca una **Unidad de Inteligencia Financiera (UIF)** (como la UIAF en Colombia) como centro nacional para la recepción, análisis y diseminación de reportes de operaciones sospechosas (ROS) y otra información relevante.
+                </p>
+            </div>
+        </section>
+
+        <footer class="text-center mt-12 p-4 border-t border-gray-300">
+            <p class="text-sm text-gray-600">Fuente: UIAF - Módulo 1: Introducción al Sistema ALA/CFT/CFP, Unidad 2: 40 Recomendaciones del GAFI.</p>
+            <p class="text-xs text-gray-500 mt-1">Infografía SPA generada sin el uso de SVG o Mermaid JS. Todos los gráficos son renderizados vía Canvas o creados con HTML/CSS.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            const tooltipTitleCallback = (tooltipItems) => {
+                const item = tooltipItems[0];
+                let label = item.chart.data.labels[item.dataIndex];
+                if (Array.isArray(label)) {
+                    return label.join(' ');
+                } else {
+                    return label;
+                }
+            };
+            
+            const pillarsCtx = document.getElementById('pillarsChart').getContext('2d');
+            new Chart(pillarsCtx, {
+                type: 'bar',
+                data: {
+                    labels: [
+                        ['Políticas y', 'Coordinación (R 1-2)'],
+                        ['LA y Decomiso', '(R 3-4)'],
+                        'FT y FP (R 5-8)',
+                        ['Medidas Preventivas', '(R 9-23)'],
+                        ['Transparencia y', 'Beneficiario Final (R 24-25)'],
+                        ['Facultades de Autoridades', '(R 26-35)'],
+                        ['Cooperación', 'Internacional (R 36-40)']
+                    ],
+                    datasets: [{
+                        label: 'Número de Recomendaciones por Pilar',
+                        data: [2, 2, 4, 15, 2, 10, 5],
+                        backgroundColor: [
+                            '#01949A',
+                            '#01949A',
+                            '#01949A',
+                            '#F0A202',
+                            '#01949A',
+                            '#01949A',
+                            '#01949A'
+                        ],
+                        borderColor: '#004369',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: tooltipTitleCallback
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                color: '#333',
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Nro. de Recomendaciones'
+                            },
+                            ticks: {
+                                color: '#333'
+                            },
+                            grid: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    }
+                }
+            });
+
+            const pepCtx = document.getElementById('pepChart').getContext('2d');
+            new Chart(pepCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        'PEP Extranjero', 
+                        'PEP Nacional', 
+                        ['PEP de Org.', 'Internacional']
+                    ],
+                    datasets: [{
+                        label: 'Tipos de PEP',
+                        data: [1, 1, 1],
+                        backgroundColor: ['#DB1F48', '#F0A202', '#01949A'],
+                        borderColor: '#ffffff',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#333'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Tipos de PEP (Rec. 12)',
+                            color: '#004369',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: tooltipTitleCallback
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
