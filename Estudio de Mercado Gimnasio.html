@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estudio de Mercado | Gimnasio Moderno</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        (async () => {
+            let db, auth, userId, appId;
+            let charts = {};
+            
+            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('Debug');
+
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Firebase Auth lista. UserID:", userId);
+                        initializeDashboard();
+                    } else {
+                        console.log("Usuario no autenticado.");
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error inicializando Firebase:", error);
+                document.getElementById('dashboard-tab').innerHTML = '<p class="text-red-500">Error al conectar con la base de datos. Verifique la configuración de Firebase.</p>';
+            }
+
+            const tabs = document.querySelectorAll('.tab-btn');
+            const contents = document.querySelectorAll('.tab-content');
+            const surveyForm = document.getElementById('gym-survey-form');
+            const formSuccessMessage = document.getElementById('form-success-message');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.getAttribute('data-tab');
+                    tabs.forEach(t => t.classList.remove('active-tab', 'font-semibold', 'text-teal-700') || t.classList.add('text-stone-500', 'hover:text-teal-600'));
+                    tab.classList.add('active-tab', 'font-semibold', 'text-teal-700');
+                    tab.classList.remove('text-stone-500', 'hover:text-teal-600');
+                    contents.forEach(c => c.id === target ? c.classList.remove('hidden') : c.classList.add('hidden'));
+                });
+            });
+
+            surveyForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                formSuccessMessage.classList.add('hidden');
+                
+                const formData = new FormData(surveyForm);
+                const surveyData = {};
+
+                surveyData.frecuencia = formData.get('frecuencia');
+                surveyData.motivacion = formData.getAll('motivacion');
+                surveyData.equipo = formData.getAll('equipo');
+                surveyData.clases = formData.get('clases');
+                surveyData.recuperacion = {
+                    sauna: parseInt(formData.get('sauna') || 0),
+                    hielo: parseInt(formData.get('hielo') || 0),
+                    botas: parseInt(formData.get('botas') || 0),
+                    masajes: parseInt(formData.get('masajes') || 0)
+                };
+                surveyData.bienestar = {
+                    meditacion: parseInt(formData.get('meditacion') || 0),
+                    nutricion: parseInt(formData.get('nutricion') || 0),
+                    talleres: parseInt(formData.get('talleres') || 0)
+                };
+                surveyData.tecnologia = {
+                    app: parseInt(formData.get('app') || 0),
+                    virtual: parseInt(formData.get('virtual') || 0),
+                    escaner: parseInt(formData.get('escaner') || 0)
+                };
+                surveyData.comunidad = formData.get('comunidad');
+                surveyData.horario = formData.get('horario');
+                surveyData.membresia = formData.get('membresia');
+                surveyData.precio = formData.get('precio');
+                surveyData.edad = formData.get('edad');
+                
+                surveyData.gustos = formData.get('gustos') || '';
+                surveyData.disgustos = formData.get('disgustos') || '';
+                surveyData.ubicacion = formData.get('ubicacion') || '';
+                surveyData.extra = formData.get('extra') || '';
+
+                surveyData.submittedAt = new Date();
+                surveyData.submitterId = userId;
+
+                try {
+                    const surveyCollection = collection(db, `artifacts/${appId}/public/data/surveyResponses`);
+                    await addDoc(surveyCollection, surveyData);
+                    
+                    formSuccessMessage.classList.remove('hidden');
+                    surveyForm.reset();
+                    document.querySelector('.tab-btn[data-tab="dashboard-tab"]').click();
+
+                } catch (error) {
+                    console.error("Error al guardar la encuesta:", error);
+                    alert("Error al guardar la encuesta: " + error.message);
+                }
+            });
+
+            function initializeDashboard() {
+                const surveyCollection = collection(db, `artifacts/${appId}/public/data/surveyResponses`);
+                
+                onSnapshot(surveyCollection, (querySnapshot) => {
+                    const responses = [];
+                    querySnapshot.forEach((doc) => {
+                        responses.push(doc.data());
+                    });
+                    
+                    document.getElementById('response-count').innerText = responses.length;
+
+                    if (responses.length === 0) {
+                        document.getElementById('charts-container').innerHTML = '<p class="text-stone-600 col-span-full text-center">Aún no hay respuestas. ¡Sé el primero en completar la encuesta!</p>';
+                        return;
+                    }
+                    
+                    document.getElementById('charts-container').innerHTML = `
+                        <div class="bg-white p-5 md:p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-semibold text-teal-700 mb-4">Motivación Principal</h3>
+                            <div class="chart-container"><canvas id="motivationsChart"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 md:p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-semibold text-teal-700 mb-4">Interés en Zona de Recuperación (Promedio)</h3>
+                            <div class="chart-container"><canvas id="recoveryChart"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 md:p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-semibold text-teal-700 mb-4">Perfil de Edad</h3>
+                            <div class="chart-container"><canvas id="ageChart"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 md:p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-semibold text-teal-700 mb-4">Disposición a Pagar</h3>
+                            <div class="chart-container"><canvas id="priceChart"></canvas></div>
+                        </div>
+                    `;
+
+                    updateCharts(responses);
+                }, (error) => {
+                    console.error("Error al escuchar datos:", error);
+                    document.getElementById('charts-container').innerHTML = '<p class="text-red-500">Error al cargar los resultados en tiempo real.</p>';
+                });
+            }
+
+            function aggregateCounts(responses, key, isArray = false) {
+                const counts = {};
+                responses.forEach(res => {
+                    const value = res[key];
+                    if (isArray && Array.isArray(value)) {
+                        value.forEach(item => {
+                            counts[item] = (counts[item] || 0) + 1;
+                        });
+                    } else if (value) {
+                        counts[value] = (counts[value] || 0) + 1;
+                    }
+                });
+                return counts;
+            }
+
+            function aggregateAverages(responses, categoryKey) {
+                const sums = {};
+                const counts = {};
+                const labels = Object.keys(responses[0][categoryKey] || {});
+                
+                labels.forEach(key => {
+                    sums[key] = 0;
+                    counts[key] = 0;
+                });
+
+                responses.forEach(res => {
+                    if (res[categoryKey]) {
+                        labels.forEach(key => {
+                            const value = res[categoryKey][key];
+                            if (value > 0) {
+                                sums[key] += value;
+                                counts[key] += 1;
+                            }
+                        });
+                    }
+                });
+
+                const averages = {};
+                labels.forEach(key => {
+                    averages[key] = (counts[key] > 0) ? (sums[key] / counts[key]) : 0;
+                });
+                return averages;
+            }
+
+            function updateChart(chartId, type, data, options = {}) {
+                const ctx = document.getElementById(chartId)?.getContext('2d');
+                if (!ctx) return;
+
+                if (charts[chartId]) {
+                    charts[chartId].destroy();
+                }
+                
+                charts[chartId] = new Chart(ctx, { type, data, options: { ...defaultChartOptions, ...options } });
+            }
+            
+            const defaultChartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+            };
+            
+            const chartColors = ['#0d9488', '#0ea5e9', '#f97316', '#a8a29e', '#5eead4', '#78716c'];
+
+            function updateCharts(responses) {
+                const motivationData = aggregateCounts(responses, 'motivacion', true);
+                updateChart('motivationsChart', 'bar', {
+                    labels: Object.keys(motivationData),
+                    datasets: [{
+                        label: 'Nº de Votos',
+                        data: Object.values(motivationData),
+                        backgroundColor: chartColors[0],
+                    }]
+                }, { indexAxis: 'y' });
+
+                const recoveryData = aggregateAverages(responses, 'recuperacion');
+                const recoveryLabels = ['Sauna', 'Baños de Hielo', 'Botas Compresión', 'Masajes'];
+                updateChart('recoveryChart', 'radar', {
+                    labels: recoveryLabels.map(l => l.replace('Baños de Hielo', 'Hielo')),
+                    datasets: [{
+                        label: 'Interés Promedio (1-5)',
+                        data: [recoveryData.sauna, recoveryData.hielo, recoveryData.botas, recoveryData.masajes],
+                        backgroundColor: 'rgba(13, 148, 136, 0.2)',
+                        borderColor: chartColors[0],
+                        pointBackgroundColor: chartColors[0],
+                    }]
+                });
+
+                const ageData = aggregateCounts(responses, 'edad');
+                const ageLabels = ['18-24', '25-34', '35-44', '45-54', '55+'];
+                updateChart('ageChart', 'pie', {
+                    labels: ageLabels,
+                    datasets: [{
+                        data: ageLabels.map(label => ageData[label] || 0),
+                        backgroundColor: chartColors,
+                    }]
+                });
+
+                const priceData = aggregateCounts(responses, 'precio');
+                const priceLabels = ['< $40', '$40 - $70', '$70 - $100', '> $100'];
+                updateChart('priceChart', 'bar', {
+                    labels: priceLabels,
+                    datasets: [{
+                        label: 'Nº de Encuestados',
+                        data: priceLabels.map(label => priceData[label] || 0),
+                        backgroundColor: chartColors[1],
+                    }]
+                });
+            }
+
+        })();
+    </script>
+    
+    <!-- Chosen Palette: Calm Neutrals (Base: stone, Accent: teal) -->
+    <!-- Application Structure Plan: Se ha diseñado una SPA con dos pestañas (Tabs) que responden a la solicitud del usuario. 1) "Realizar Encuesta": un formulario HTML completo para la recolección de datos. 2) "Ver Resultados": un dashboard que visualiza los datos agregados. La interacción clave es el 'submit' del formulario, que usa Firestore (addDoc) para guardar los datos. La pestaña de "Resultados" usa 'onSnapshot' de Firestore para escuchar cambios en la colección de respuestas en tiempo real, recalcular los datos agregados y actualizar los gráficos (Chart.js) al instante. Esta arquitectura crea un ciclo completo de recolección y visualización en una sola página. -->
+    <!-- Visualization & Content Choices: (1) Formulario: Preguntas del MD convertidas a inputs HTML (radio, checkbox, select, range, textarea) para una correcta captura de datos. (2) Dashboard: Gráficos (Barra, Radar, Pastel) de Chart.js. (3) Lógica de Datos: Los datos NO son simulados. Se leen de Firestore. Se usan funciones de agregación (para contar votos, promediar calificaciones) en JS para transformar los datos crudos de la BD en un formato que Chart.js pueda consumir. Esto responde directamente a "una vez se ingrese poder sacar graficas". -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+      .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        height: 300px;
+        max-height: 400px;
+      }
+      @media (min-width: 768px) { .chart-container { height: 350px; } }
+      .active-tab { border-bottom-width: 3px; border-color: #0d9488; }
+      .form-label { font-weight: 600; color: #3f3f46; margin-bottom: 0.5rem; display: block; }
+      .form-radio-group { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+      .form-radio-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 400; }
+      .form-input, .form-textarea, .form-select {
+        width: 100%;
+        border-radius: 0.5rem;
+        border: 1px solid #d6d3d1;
+        padding: 0.75rem 1rem;
+        transition: border-color 0.2s;
+      }
+      .form-input:focus, .form-textarea:focus, .form-select:focus {
+        outline: none;
+        border-color: #0d9488;
+        box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+      }
+      .form-section { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #e7e5e4; }
+    </style>
+</head>
+<body class="bg-stone-100 font-sans text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-teal-700 mb-2">Estudio de Mercado Interactivo</h1>
+            <p class="text-lg text-stone-600">Completa la encuesta y mira cómo los resultados se actualizan en tiempo real.</p>
+        </header>
+
+        <div class="mb-6 border-b border-stone-300">
+            <nav class="flex flex-wrap -mb-px space-x-4 md:space-x-8">
+                <button class="tab-btn active-tab font-semibold text-teal-700 py-3 px-1 md:px-2 text-base md:text-lg" data-tab="survey-tab">Realizar Encuesta</button>
+                <button class="tab-btn text-stone-500 hover:text-teal-600 py-3 px-1 md:px-2 text-base md:text-lg" data-tab="dashboard-tab">Ver Resultados</button>
+            </nav>
+        </div>
+
+        <main>
+            <!-- PESTAÑA DEL FORMULARIO -->
+            <div id="survey-tab" class="tab-content">
+                <div class="bg-white p-6 md:p-10 rounded-xl shadow-lg max-w-4xl mx-auto">
+                    <h2 class="text-2xl font-bold text-teal-700 mb-2">Encuesta: El Gimnasio del Futuro</h2>
+                    <p class="text-stone-600 mb-6">Tus respuestas son anónimas y nos ayudan a construir un mejor servicio. ¡Gracias!</p>
+
+                    <div id="form-success-message" class="hidden bg-teal-100 border-l-4 border-teal-500 text-teal-700 p-4 mb-6 rounded-lg" role="alert">
+                        <p class="font-bold">¡Encuesta enviada!</p>
+                        <p>Muchas gracias por tu tiempo. Los resultados han sido registrados.</p>
+                    </div>
+
+                    <form id="gym-survey-form" class="space-y-8">
+                        
+                        <div class="form-section">
+                            <h3 class="text-xl font-semibold text-stone-800 mb-4">Sección 1: Tus Hábitos y Metas</h3>
+                            
+                            <div>
+                                <label class="form-label" for="frecuencia">1. ¿Con qué frecuencia realizas actividad física?</label>
+                                <select id="frecuencia" name="frecuencia" class="form-select" required>
+                                    <option value="" disabled selected>Selecciona una opción...</option>
+                                    <option value="diario">Diariamente</option>
+                                    <option value="3-5_semana">3-5 veces por semana</option>
+                                    <option value="1-2_semana">1-2 veces por semana</option>
+                                    <option value="raramente">Raramente</option>
+                                    <option value="nunca">Actualmente no hago ejercicio</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label">2. ¿Cuál es tu principal motivación? (Marca hasta 2)</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                                    <label class="form-radio-label"><input type="checkbox" name="motivacion" value="salud" class="form-checkbox"> Salud y bienestar</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="motivacion" value="peso" class="form-checkbox"> Perder peso</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="motivacion" value="fuerza" class="form-checkbox"> Ganar músculo y fuerza</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="motivacion" value="estres" class="form-checkbox"> Reducir estrés</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="motivacion" value="rendimiento" class="form-checkbox"> Rendimiento deportivo</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="motivacion" value="social" class="form-checkbox"> Socializar</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="motivacion" value="rehab" class="form-checkbox"> Rehabilitación</label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="form-label" for="gustos">3. Si vas a un gimnasio, ¿qué es lo que MÁS te gusta de él?</label>
+                                <textarea id="gustos" name="gustos" rows="2" class="form-textarea" placeholder="Ej: La limpieza, la comunidad, las máquinas..."></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label" for="disgustos">4. ¿Qué es lo que MENOS te gusta o le falta?</label>
+                                <textarea id="disgustos" name="disgustos" rows="2" class="form-textarea" placeholder="Ej: Mucha gente, falta de equipo, malos horarios..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="text-xl font-semibold text-stone-800 mb-4">Sección 2: El Gimnasio Ideal</h3>
+                            
+                            <div>
+                                <label class="form-label">5. ¿Qué áreas de equipo son imprescindibles para ti?</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                                    <label class="form-radio-label"><input type="checkbox" name="equipo" value="peso_libre"> Zona de peso libre</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="equipo" value="maquinas"> Máquinas de musculación</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="equipo" value="cardio"> Zona de cardio</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="equipo" value="funcional"> Zona de entrenamiento funcional</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="equipo" value="olimpico"> Plataformas de levantamiento</label>
+                                    <label class="form-radio-label"><input type="checkbox" name="equipo" value="boxeo"> Zona de boxeo</label>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label" for="clases">6. ¿Qué tipo de clases grupales te interesan más?</label>
+                                <select id="clases" name="clases" class="form-select" required>
+                                    <option value="" disabled selected>Selecciona tu favorita...</option>
+                                    <option value="hiit">Alta intensidad (HIIT, Funcional)</option>
+                                    <option value="mente_cuerpo">Mente y cuerpo (Yoga, Pilates)</option>
+                                    <option value="fuerza">Fuerza (Powerlifting, Booty)</option>
+                                    <option value="baile">Baile (Zumba)</option>
+                                    <option value="spinning">Ciclismo indoor (Spinning)</option>
+                                    <option value="boxeo_grupal">Boxeo o Kickboxing grupal</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="text-xl font-semibold text-stone-800 mb-4">Sección 3: Servicios Innovadores (Califica de 1 a 5)</h3>
+                            <p class="text-stone-600 mb-4 -mt-3 text-sm">(1 = Nada interesado, 5 = Muy interesado)</p>
+
+                            <div class="space-y-4">
+                                <label class="form-label">7. Zona de Recuperación:</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                    <label class="form-radio-label text-sm"><input type="radio" name="sauna" value="1"> (1)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="sauna" value="2"> (2)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="sauna" value="3"> (3)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="sauna" value="4"> (4)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="sauna" value="5" checked> (5)</label>
+                                    <span class="col-span-full sm:col-span-3 sm:ml-4 font-medium">Sauna (tradicional o infrarrojo)</span>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                    <label class="form-radio-label text-sm"><input type="radio" name="hielo" value="1"> (1)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="hielo" value="2"> (2)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="hielo" value="3"> (3)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="hielo" value="4" checked> (4)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="hielo" value="5"> (5)</label>
+                                    <span class="col-span-full sm:col-span-3 sm:ml-4 font-medium">Baños de hielo (Crioterapia)</span>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                    <label class="form-radio-label text-sm"><input type="radio" name="botas" value="1"> (1)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="botas" value="2"> (2)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="botas" value="3" checked> (3)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="botas" value="4"> (4)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="botas" value="5"> (5)</label>
+                                    <span class="col-span-full sm:col-span-3 sm:ml-4 font-medium">Botas de compresión</span>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                    <label class="form-radio-label text-sm"><input type="radio" name="masajes" value="1"> (1)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="masajes" value="2"> (2)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="masajes" value="3"> (3)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="masajes" value="4"> (4)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="masajes" value="5" checked> (5)</label>
+                                    <span class="col-span-full sm:col-span-3 sm:ml-4 font-medium">Masajes o Fisioterapia</span>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4 mt-6">
+                                <label class="form-label">8. Bienestar Mental y Nutrición:</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                    <label class="form-radio-label text-sm"><input type="radio" name="meditacion" value="1"> (1)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="meditacion" value="2"> (2)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="meditacion" value="3" checked> (3)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="meditacion" value="4"> (4)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="meditacion" value="5"> (5)</label>
+                                    <span class="col-span-full sm:col-span-3 sm:ml-4 font-medium">Clases de meditación</span>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                    <label class="form-radio-label text-sm"><input type="radio" name="nutricion" value="1"> (1)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="nutricion" value="2"> (2)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="nutricion" value="3"> (3)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="nutricion" value="4" checked> (4)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="nutricion" value="5"> (5)</label>
+                                    <span class="col-span-full sm:col-span-3 sm:ml-4 font-medium">Coaching nutricional</span>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                    <label class="form-radio-label text-sm"><input type="radio" name="talleres" value="1"> (1)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="talleres" value="2" checked> (2)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="talleres" value="3"> (3)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="talleres" value="4"> (4)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="talleres" value="5"> (5)</label>
+                                    <span class="col-span-full sm:col-span-3 sm:ml-4 font-medium">Talleres (sueño, estrés)</span>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4 mt-6">
+                                <label class="form-label">9. Tecnología Integrada:</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                    <label class="form-radio-label text-sm"><input type="radio" name="app" value="1"> (1)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="app" value="2"> (2)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="app" value="3"> (3)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="app" value="4"> (4)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="app" value="5" checked> (5)</label>
+                                    <span class="col-span-full sm:col-span-3 sm:ml-4 font-medium">App (reservas, progreso)</span>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                    <label class="form-radio-label text-sm"><input type="radio" name="virtual" value="1" checked> (1)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="virtual" value="2"> (2)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="virtual" value="3"> (3)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="virtual" value="4"> (4)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="virtual" value="5"> (5)</label>
+                                    <span class="col-span-full sm:col-span-3 sm:ml-4 font-medium">Clases virtuales (desde casa)</span>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                    <label class="form-radio-label text-sm"><input type="radio" name="escaner" value="1"> (1)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="escaner" value="2"> (2)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="escaner" value="3"> (3)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="escaner" value="4" checked> (4)</label>
+                                    <label class="form-radio-label text-sm"><input type="radio" name="escaner" value="5"> (5)</label>
+                                    <span class="col-span-full sm:col-span-3 sm:ml-4 font-medium">Escáneres corporales</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3 class="text-xl font-semibold text-stone-800 mb-4">Sección 4: Logística y Precio</h3>
+
+                            <div>
+                                <label class="form-label">10. ¿Qué tan importante es la "comunidad" para ti?</label>
+                                <div class="form-radio-group">
+                                    <label class="form-radio-label"><input type="radio" name="comunidad" value="muy_importante" class="form-radio"> Es lo más importante</label>
+                                    <label class="form-radio-label"><input type="radio" name="comunidad" value="importante" class="form-radio" checked> Es importante</label>
+                                    <label class="form-radio-label"><input type="radio" name="comunidad" value="neutral" class="form-radio"> Es neutral</label>
+                                    <label class="form-radio-label"><input type="radio" name="comunidad" value="no_importante" class="form-radio"> Prefiero estar solo/a</label>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <label class="form-label" for="horario">11. ¿En qué horario preferirías entrenar?</label>
+                                <select id="horario" name="horario" class="form-select" required>
+                                    <option value="" disabled selected>Selecciona un horario...</option>
+                                    <option value="madrugada">Temprano (5am - 8am)</option>
+                                    <option value="manana">Media mañana (8am - 11am)</option>
+                                    <option value="mediodia">Mediodía (11am - 2pm)</option>
+                                    <option value="tarde">Tarde (2pm - 6pm)</option>
+                                    <option value="noche">Noche (6pm - 10pm)</option>
+                                    <option value="24h">Necesito 24/7</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <label class="form-label">12. ¿Qué tipo de membresía prefieres?</label>
+                                <div class="form-radio-group">
+                                    <label class="form-radio-label"><input type="radio" name="membresia" value="mensual" class="form-radio" checked> Mensual (sin contrato)</label>
+                                    <label class="form-radio-label"><input type="radio" name="membresia" value="anual"> Anual (con descuento)</label>
+                                    <label class="form-radio-label"><input type="radio" name="membresia" value="paquetes"> Paquetes de clases</label>
+                                    <label class="form-radio-label"><input type="radio" name="membresia" value="premium"> Premium (todo incluido)</label>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <label class="form-label" for="precio">13. ¿Cuánto pagarías por un servicio premium (equipos, clases, zona de recuperación)? (USD/mes)</label>
+                                <select id="precio" name="precio" class="form-select" required>
+                                    <option value="" disabled selected>Selecciona un rango de precio...</option>
+                                    <option value="< $40">Menos de $40</option>
+                                    <option value="$40 - $70">$40 - $70</option>
+                                    <option value="$70 - $100">$70 - $100</option>
+                                    <option value="> $100">Más de $100</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3 class="text-xl font-semibold text-stone-800 mb-4">Sección 5: Sobre Ti</h3>
+                            
+                            <div>
+                                <label class="form-label">14. ¿Cuál es tu rango de edad?</label>
+                                <div class="form-radio-group">
+                                    <label class="form-radio-label"><input type="radio" name="edad" value="18-24" class="form-radio"> 18-24</label>
+                                    <label class="form-radio-label"><input type="radio" name="edad" value="25-34" class="form-radio" checked> 25-34</label>
+                                    <label class="form-radio-label"><input type="radio" name="edad" value="35-44" class="form-radio"> 35-44</label>
+                                    <label class="form-radio-label"><input type="radio" name="edad" value="45-54" class="form-radio"> 45-54</label>
+                                    <label class="form-radio-label"><input type="radio" name="edad" value="55+" class="form-radio"> 55+</label>
+                                </div>
+                            </div>
+
+                            <div class="mt-6">
+                                <label class="form-label" for="ubicacion">15. ¿En qué barrio vives o trabajas? (Para evaluar la ubicación)</label>
+                                <input type="text" id="ubicacion" name="ubicacion" class="form-input" placeholder="Ej: Chapinero, El Poblado, Miraflores...">
+                            </div>
+
+                            <div class="mt-6">
+                                <label class="form-label" for="extra">16. ¿Algo más que te encantaría ver en un nuevo gimnasio?</label>
+                                <textarea id="extra" name="extra" rows="3" class="form-textarea" placeholder="Ideas locas, servicios que faltan, etc."></textarea>
+                            </div>
+                        </div>
+
+                        <div>
+                            <button type="submit" class="w-full text-white bg-teal-600 hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 font-bold rounded-lg text-lg px-8 py-4 transition duration-300 ease-in-out">
+                                Enviar Encuesta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- PESTAÑA DEL DASHBOARD -->
+            <div id="dashboard-tab" class="tab-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <p class="text-stone-700 text-lg">Resultados del estudio en tiempo real.</p>
+                    <div class="text-right">
+                        <span class="text-3xl font-bold text-teal-700" id="response-count">0</span>
+                        <span class="block text-sm text-stone-600">Respuestas Totales</span>
+                    </div>
+                </div>
+
+                <div id="charts-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                    <!-- Los gráficos se cargarán aquí dinámicamente -->
+                    <p class="text-stone-600 col-span-full text-center py-12">Cargando resultados...</p>
+                </div>
+            </div>
+        </main>
+
+    </div>
+</body>
+</html>
